@@ -109,7 +109,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const [difficulty, setDifficulty] = useState(profile.difficulty_level);
   const [listening, setListening] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState<number | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState<number | boolean | null>(false);
   const [flaggedMsgs, setFlaggedMsgs] = useState<number[]>([]); // Track flagged message indices
   const [flagModalIdx, setFlagModalIdx] = useState<number | null>(null);
   const [flagReason, setFlagReason] = useState<string>('Incorrect');
@@ -133,12 +133,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const [quizReviewData, setQuizReviewData] = useState<any>(null);
   const [quizTimer, setQuizTimer] = useState(20);
   const [showFeedbackAnim, setShowFeedbackAnim] = useState<null | "correct" | "wrong">(null);
+  const [confirmFlag, setConfirmFlag] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [xpHistory, setXpHistory] = useState<number[]>([0]);
   const [quizHistory, setQuizHistory] = useState<{score: number, total: number}[]>([]);
   const [missedQuestions, setMissedQuestions] = useState<{question: string, count: number}[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSessionSummary, setShowSessionSummary] = useState(false); // Added state for session summary
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -285,7 +289,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     // });
   };
 
-  const confirmFlag = async () => {
+  const handleConfirmFlag = async () => {
     if (flagModalIdx === null) return;
     const msgToFlag = messages[flagModalIdx];
     try {
@@ -305,10 +309,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     }
     setFlagModalIdx(null);
     setFlagReason('Incorrect');
+    setConfirmFlag(false);
+    setToastOpen(true); // Show toast after flagging
   };
 
   const handleToastClose = () => {
-    setToast(null);
+    setToastOpen(false);
   };
 
   const flagReasons = [
@@ -552,6 +558,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     };
   }, []);
 
+  const handleSessionSummary = () => setShowSessionSummary(true);
+
   return (
     <div className="chat-screen" style={{ position: 'relative', minHeight: '100vh' }}>
       <button
@@ -573,315 +581,240 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         ← Back
       </button>
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        marginBottom: 16, marginTop: 8
+        maxWidth: 700,
+        margin: '32px auto',
+        padding: 24,
+        background: '#fff',
+        borderRadius: 18,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.07)'
       }}>
-        <div style={{ fontWeight: 700, fontSize: '1.15em', marginBottom: 4 }}>
-          Level {level} — {xp} XP
-        </div>
-        <div style={{
-          width: 200,
-          height: 14,
-          background: '#333',
-          borderRadius: 8,
-          overflow: 'hidden',
-          marginBottom: 8,
-          border: '1px solid #888'
-        }}>
-          <div style={{
-            width: `${(xp / LEVEL_UP_XP) * 100}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg, #1976d2 60%, #8e24aa 100%)',
-            transition: 'width 0.3s'
-          }} />
-        </div>
-        {/* Show badges */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {badges.map((badge, i) => (
-            <span key={i} style={{
-              background: '#fbc02d', color: '#333', borderRadius: 12,
-              padding: '2px 10px', fontSize: '0.93em', fontWeight: 600
-            }}>
-              🏅 {badge}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="chat-container" style={{ maxWidth: 600, margin: '0 auto', padding: 16 }}>
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`chat-bubble ${msg.sender}`}
-            aria-live={msg.sender === 'bot' ? 'polite' : undefined}
-            style={{
-              background: msg.sender === 'user' ? '#1976d2' : '#222',
-              color: '#fff',
-              borderRadius: 16,
-              padding: '12px 18px',
-              margin: '8px 0',
-              alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '80%',
-              fontStyle: msg.type === 'explanation' ? 'italic' : 'normal',
-              position: 'relative',
-              display: 'flex',
-              flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row',
-              alignItems: 'center'
-            }}
-          >
-            {/* Avatar */}
-            <span style={{
-              fontSize: '1.7em',
-              margin: msg.sender === 'user' ? '0 0 0 12px' : '0 12px 0 0',
-              userSelect: 'none'
-            }}>
-              {msg.sender === 'bot'
-                ? personaAvatars[persona] || '🤖'
-                : (userAvatar.startsWith('data:')
-                    ? <img src={userAvatar} alt="User avatar" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                    : userAvatar)}
-            </span>
-            {/* Message text and buttons */}
-            <span style={{ flex: 1 }}>
-              {msg.text}
-              {msg.sender === 'bot' && (
-                <>
-                  <button
-                    onClick={() => speak(msg.text, profile.ageGroup, i)}
-                    aria-label="Read aloud"
-                    style={{
-                      marginLeft: 8,
-                      background: 'none',
-                      border: 'none',
-                      color: isSpeaking === i ? '#fbc02d' : '#fff',
-                      cursor: 'pointer',
-                      fontWeight: isSpeaking === i ? 700 : 400,
-                      fontSize: '1.2em'
-                    }}
-                    tabIndex={0}
-                    title="Read aloud"
-                    disabled={isSpeaking !== null && isSpeaking !== i}
-                  >
-                    {isSpeaking === i ? '🔊🟢' : '🔊'}
-                  </button>
-                  <button
-                    onClick={() => setFlagModalIdx(i)}
-                    aria-label="Flag this answer"
-                    style={{
-                      marginLeft: 8,
-                      background: 'none',
-                      border: 'none',
-                      color: flaggedMsgs.includes(i) ? '#fbc02d' : '#fff',
-                      cursor: flaggedMsgs.includes(i) ? 'not-allowed' : 'pointer',
-                      fontWeight: 700,
-                      fontSize: '1.1em'
-                    }}
-                    disabled={flaggedMsgs.includes(i)}
-                    title={flaggedMsgs.includes(i) ? 'Flagged' : 'Flag as incorrect/confusing'}
-                  >
-                    🚩
-                  </button>
-                  {flaggedMsgs.includes(i) && (
-                    <span style={{
-                      marginLeft: 8,
-                      color: '#fbc02d',
-                      fontWeight: 600,
-                      fontSize: '0.95em'
-                    }}>
-                      Flagged
-                    </span>
-                  )}
-                </>
-              )}
-            </span>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '2.2em', color: '#1976d2' }}>StudyWithMe</h1>
+            <div style={{ fontStyle: 'italic', color: '#1976d2', fontSize: '1.1em' }}>
+              Perfect your knowledge, one review at a time.
+            </div>
           </div>
-        ))}
-        {loading && (
-          <div style={{ color: '#888', margin: '8px 0' }}>AI is typing...</div>
-        )}
-        <div className="chat-input-area" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            onClick={() => setShowSettings(true)}
+            style={{
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: 48,
+              height: 48,
+              fontSize: '1.7em',
+              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.15)',
+              cursor: 'pointer'
+            }}
+            aria-label="Open settings"
+            title="Settings & Profile"
+          >
+            ⚙️
+          </button>
+        </div>
+
+        {/* XP/Level Bar */}
+        <div style={{ margin: '16px 0 24px 0', textAlign: 'center' }}>
+          <span style={{ fontWeight: 700, fontSize: '1.2em', color: '#1976d2' }}>
+            Level {level} — {xp} XP
+          </span>
+          <div style={{
+            width: '80%',
+            margin: '8px auto 0 auto',
+            background: '#eee',
+            borderRadius: 8,
+            height: 10,
+            position: 'relative'
+          }}>
+            <div style={{
+              width: `${(xp / LEVEL_UP_XP) * 100}%`,
+              background: '#1976d2',
+              height: '100%',
+              borderRadius: 8,
+              transition: 'width 0.3s'
+            }} />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          marginBottom: 18
+        }}>
+          <button style={{ background: '#43a047', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={handleSessionSummary}>Session Summary</button>
+          <button style={{ background: '#8e24aa', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={startQuiz}>Quiz Mode</button>
+          <button style={{ background: '#1976d2', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={() => setShowDashboard(true)}>Progress Dashboard</button>
+          <button style={{ background: '#616161', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={() => setShowHistory(true)}>Review Past Sessions</button>
+          {/* Add more as needed */}
+        </div>
+
+        {/* Chat Input Row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 24
+        }}>
           <input
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Type your question..."
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
             aria-label="Chat input"
-            style={{ flex: 1, fontSize: '1.1em', borderRadius: 8, padding: 8 }}
+            style={{
+              flex: 1,
+              fontSize: '1.1em',
+              borderRadius: 8,
+              padding: 12,
+              border: '1.5px solid #bbb'
+            }}
             disabled={isOffline || loading}
+            onKeyDown={e => e.key === 'Enter' && sendMessage()}
           />
           <button
             onClick={() => sendMessage()}
-            aria-label={t('send', language)}
+            aria-label="Send"
             disabled={isOffline || loading || !input.trim()}
-          >
-            {t('send', language)}
-          </button>
-          <button
-            onClick={listening ? stopListening : startListening}
-            aria-label={listening ? 'Stop voice input' : 'Start voice input'}
-            disabled={loading}
-          >
-            {listening ? '🛑 Stop' : '🎤 Speak'}
-          </button>
-          <button
-            onClick={handleExplain}
-            aria-label="Explain last answer"
-            disabled={loading || !messages.some(m => m.sender === 'user')}
-            style={{ background: '#fbc02d', color: '#222', borderRadius: 8, padding: '0 10px' }}
-          >
-            {t('explain', language)}
-          </button>
-          <button
-            onClick={() => setShowSummary(true)}
-            style={{
-              background: '#43a047',
-              color: '#fff',
-              borderRadius: 8,
-              padding: '6px 18px',
-              fontWeight: 700,
-              marginBottom: 12,
-              cursor: 'pointer'
-            }}
-            aria-label="Show session summary"
-          >
-            {t('sessionSummary', language)}
-          </button>
-          <button
-            onClick={startQuiz}
-            style={{
-              background: '#8e24aa',
-              color: '#fff',
-              borderRadius: 8,
-              padding: '6px 18px',
-              fontWeight: 700,
-              marginBottom: 12,
-              cursor: 'pointer'
-            }}
-            aria-label="Start quiz"
-            disabled={loading || quizActive}
-          >
-            {t('quizMode', language)}
-          </button>
-          <button
-            onClick={() => setShowDashboard(true)}
             style={{
               background: '#1976d2',
               color: '#fff',
               borderRadius: 8,
-              padding: '6px 18px',
+              padding: '8px 18px',
               fontWeight: 700,
-              marginBottom: 12,
-              cursor: 'pointer'
+              border: 'none'
             }}
-            aria-label="Show progress dashboard"
-          >
-            {t('progressDashboard', language)}
-          </button>
+          >Send</button>
           <button
-            onClick={() => setShowHistory(true)}
+            onClick={listening ? stopListening : startListening}
+            aria-label={listening ? 'Stop voice input' : 'Start voice input'}
+            disabled={loading}
             style={{
-              background: '#888',
-              color: '#fff',
+              background: listening ? '#d32f2f' : '#eee',
+              color: listening ? '#fff' : '#222',
               borderRadius: 8,
-              padding: '6px 18px',
+              padding: '8px 12px',
               fontWeight: 700,
-              marginBottom: 12,
-              cursor: 'pointer'
+              border: 'none'
             }}
-            aria-label="Review past sessions"
-          >
-            {t('reviewPast', language)}
-          </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          >{listening ? '🛑' : '🎤'}</button>
+          <label htmlFor="image-upload" style={{
+            cursor: loading ? 'not-allowed' : 'pointer',
+            background: '#eee',
+            borderRadius: 8,
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            border: '1.5px solid #bbb'
+          }}>
+            📷 Image
             <input
               id="image-upload"
               type="file"
               accept="image/*"
               style={{ display: 'none' }}
               onChange={handleImageChange}
-              disabled={loading}
               aria-label="Upload image"
             />
-            <label htmlFor="image-upload" style={{
-              cursor: loading ? 'not-allowed' : 'pointer',
-              background: '#eee',
+          </label>
+          {imagePreview && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src={imagePreview} alt="Preview" style={{ maxHeight: 40, borderRadius: 4 }} />
+              <button
+                onClick={sendImage}
+                style={{ background: '#1976d2', color: '#fff', borderRadius: 6, padding: '2px 10px' }}
+              >
+                Send
+              </button>
+              <button
+                onClick={() => { setImagePreview(null); setImageFile(null); }}
+                style={{ background: '#eee', borderRadius: 6, padding: '2px 10px' }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <button
+            onClick={handleExplain}
+            aria-label="Explain last answer"
+            disabled={loading || !messages.some(m => m.sender === 'user')}
+            style={{
+              background: '#fbc02d',
+              color: '#222',
               borderRadius: 8,
-              padding: '4px 12px',
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              📷 {t('image', language)}
-            </label>
-            {imagePreview && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <img src={imagePreview} alt="Preview" style={{ maxHeight: 40, borderRadius: 4 }} />
-                <button
-                  onClick={sendImage}
-                  disabled={loading}
-                  style={{ background: '#1976d2', color: '#fff', borderRadius: 6, padding: '2px 10px' }}
-                >
-                  {t('send', language)}
-                </button>
-                <button
-                  onClick={() => { setImagePreview(null); setImageFile(null); }}
-                  style={{ background: '#eee', borderRadius: 6, padding: '2px 10px' }}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+              padding: '8px 12px',
+              fontWeight: 700,
+              border: 'none'
+            }}
+          >Explain</button>
         </div>
-        {quizActive && quizQuestions.length > 0 && (
-          <div style={{ margin: '1rem 0', background: '#f3e5f5', borderRadius: 12, padding: 16 }}>
-            {/* Progress Bar */}
-            <div style={{ width: '100%', background: '#eee', borderRadius: 8, height: 10, marginBottom: 12 }}>
-              <div style={{
-                width: `${((quizStep) / quizQuestions.length) * 100}%`,
-                background: '#1976d2',
-                height: '100%',
-                borderRadius: 8,
-                transition: 'width 0.3s'
-              }} />
-            </div>
-            {/* Timer */}
-            <div style={{ fontWeight: 600, color: quizTimer < 6 ? '#d32f2f' : '#1976d2', marginBottom: 8 }}>
-              Time left: {quizTimer}s
-            </div>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>
-              Quiz Question {quizStep + 1} of {quizQuestions.length}
-            </div>
-            <div style={{ marginBottom: 12 }}>{quizQuestions[quizStep].question}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {quizQuestions[quizStep].choices.map((choice: string, idx: number) => (
+
+        {/* Chat messages and other content go here */}
+        {messages.map((msg, i) => (
+          <div key={i} style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+            marginBottom: 8
+          }}>
+            {/* Avatar or icon here */}
+            <div style={{
+              background: msg.sender === 'user' ? '#e3f2fd' : '#f3e5f5',
+              color: '#222',
+              borderRadius: 12,
+              padding: '10px 16px',
+              maxWidth: '70%',
+              position: 'relative'
+            }}>
+              {msg.text}
+              {/* Only show flag for bot messages */}
+              {msg.sender === 'bot' && (
                 <button
-                  key={idx}
-                  onClick={() => submitQuizAnswer(choice)}
-                  disabled={loading}
-                  aria-label={`Select answer: ${choice}`}
+                  onClick={() => setConfirmFlag(true)}
+                  aria-label="Flag message"
                   style={{
-                    background: '#1976d2',
-                    color: '#fff',
-                    borderRadius: 8,
-                    padding: '8px 16px',
-                    fontWeight: 600,
-                    fontSize: '1.1em',
+                    marginLeft: 8,
+                    background: 'none',
                     border: 'none',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    fontSize: '1.2em'
                   }}
                 >
-                  {choice}
+                  🚩
                 </button>
-              ))}
+              )}
             </div>
-            {/* Feedback Animation */}
-            {showFeedbackAnim === "correct" && (
-              <div style={{ fontSize: "2em", color: "#43a047", textAlign: "center", marginTop: 12 }}>✅</div>
-            )}
-            {showFeedbackAnim === "wrong" && (
-              <div style={{ fontSize: "2em", color: "#d32f2f", textAlign: "center", marginTop: 12 }}>❌</div>
+            {msg.sender === 'bot' && (
+              <button
+                onClick={() => {
+                  setIsSpeaking(true);
+                  const utter = new window.SpeechSynthesisUtterance(msg.text);
+                  utter.onend = () => setIsSpeaking(false);
+                  window.speechSynthesis.speak(utter);
+                }}
+                aria-label="Speak message"
+                disabled={!!isSpeaking}
+                style={{
+                  marginLeft: 8,
+                  background: '#eee',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: isSpeaking ? 'not-allowed' : 'pointer',
+                  fontSize: '1em'
+                }}
+              >
+                {isSpeaking ? '🔊...' : '🔊'}
+              </button>
             )}
           </div>
+        ))}
+        {loading && (
+          <div style={{ color: '#888', margin: '8px 0' }}>AI is typing...</div>
         )}
       </div>
       {flagModalIdx !== null && (
@@ -920,6 +853,21 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                 style={{ background: '#eee', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 700, cursor: 'pointer' }}
               >Cancel</button>
             </div>
+          </div>
+        </div>
+      )}
+      {confirmFlag && (
+        <div role="dialog" aria-modal="true" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.3)', zIndex: 3000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: 24, minWidth: 260
+          }}>
+            <div style={{ marginBottom: 16 }}>Are you sure you want to flag this message?</div>
+            <button onClick={handleConfirmFlag} style={{ marginRight: 8 }}>Yes</button>
+            <button onClick={() => setConfirmFlag(false)}>No</button>
           </div>
         </div>
       )}
@@ -1314,6 +1262,137 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       >
         {t('clearHistory', language)}
       </button>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-modal-title"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <div style={{
+            background: '#fff',
+            borderRadius: 16,
+            padding: 32,
+            minWidth: 320,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.15)'
+          }}>
+            <h2 id="settings-modal-title" style={{ marginTop: 0 }}>Settings & Profile</h2>
+            {/* Place your Settings form/fields here */}
+            <button
+              onClick={() => setShowSettings(false)}
+              style={{
+                marginTop: 16,
+                padding: '8px 20px',
+                borderRadius: 8,
+                background: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >Close</button>
+          </div>
+        </div>
+      )}
+      {showSessionSummary && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="session-summary-title"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <div style={{
+            background: '#fff',
+            borderRadius: 16,
+            padding: 32,
+            minWidth: 320,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.15)'
+          }}>
+            <h2 id="session-summary-title" style={{ marginTop: 0 }}>Session Summary</h2>
+            {/* Place your session summary content here */}
+            <button
+              onClick={() => setShowSessionSummary(false)}
+              style={{
+                marginTop: 16,
+                padding: '8px 20px',
+                borderRadius: 8,
+                background: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >Close</button>
+          </div>
+        </div>
+      )}
+      {quizActive && (
+        <div style={{ fontWeight: 600, color: quizTimer < 6 ? '#d32f2f' : '#1976d2', marginBottom: 8 }}>
+          Time left: {quizTimer}s
+        </div>
+      )}
+      {showFeedbackAnim === "correct" && (
+        <div style={{ fontSize: "2em", color: "#43a047", textAlign: "center", marginTop: 12 }}>✅</div>
+      )}
+      {showFeedbackAnim === "wrong" && (
+        <div style={{ fontSize: "2em", color: "#d32f2f", textAlign: "center", marginTop: 12 }}>❌</div>
+      )}
+      {toastOpen && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: '#323232', color: '#fff', padding: '12px 24px', borderRadius: 8, zIndex: 4000
+        }}>
+          Message flagged!
+          <button
+            onClick={handleToastClose}
+            style={{ marginLeft: 16, color: '#fff', background: 'none', border: 'none', cursor: 'pointer' }}
+            aria-label="Close notification"
+          >✖</button>
+        </div>
+      )}
+      {isSpeaking && (
+        <button
+          onClick={() => {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+          }}
+          aria-label="Stop speaking"
+          style={{
+            position: 'fixed',
+            bottom: 100,
+            right: 32,
+            background: '#d32f2f',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 24,
+            padding: '12px 18px',
+            fontSize: '1.5em',
+            zIndex: 3000,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            cursor: 'pointer'
+          }}
+        >
+          ⏹️ Stop Speaking
+        </button>
+      )}
     </div>
   );
 };
