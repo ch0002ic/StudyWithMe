@@ -84,6 +84,7 @@ def simple_fact_check(answer: str, subject: str = "") -> Optional[str]:
         return "No source cited for factual answer. Please verify."
     return None
 
+# API endpoints
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
     try:
