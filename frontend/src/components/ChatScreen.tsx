@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import dayjs from 'dayjs';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import { Profile } from './Onboarding';
+import EducatorDashboard from './EducatorDashboard';
 
 declare global {
   interface Window {
@@ -98,8 +102,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   onBack,
   persona,
   autoRead,
-  userAvatar,
-  language // <-- Add this line
+  language
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -136,6 +139,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const [confirmFlag, setConfirmFlag] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showEducatorDashboard, setShowEducatorDashboard] = useState(false);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [xpHistory, setXpHistory] = useState<number[]>([0]);
   const [quizHistory, setQuizHistory] = useState<{score: number, total: number}[]>([]);
   const [missedQuestions, setMissedQuestions] = useState<{question: string, count: number}[]>([]);
@@ -143,8 +148,22 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [showSettings, setShowSettings] = useState(false);
   const [showSessionSummary, setShowSessionSummary] = useState(false); // Added state for session summary
-
+  const [streak, setStreak] = useState(0);
+  const [lastActiveDate, setLastActiveDate] = useState<string | null>(null);
+  const [topicStats, setTopicStats] = useState<{[topic: string]: {correct: number, total: number}}>({});
+  const [miniGameActive, setMiniGameActive] = useState(false);
+  const [miniGameCards, setMiniGameCards] = useState<{question: string, answer: string}[]>([]);
+  const [miniGameStep, setMiniGameStep] = useState(0);
+  const [miniGameInput, setMiniGameInput] = useState('');
+  const [miniGameScore, setMiniGameScore] = useState(0);
+  const [miniGameFeedback, setMiniGameFeedback] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    if (showDashboard && closeBtnRef.current) {
+      closeBtnRef.current.focus();
+    }
+  }, [showDashboard]);
 
   function speak(text: string, ageGroup: string, msgIdx: number) {
     if (!window.speechSynthesis) return;
@@ -384,6 +403,28 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const startQuiz = async () => {
     setLoading(true);
+    if (isOffline) {
+      const cached = localStorage.getItem('prefetched_quiz');
+      if (cached) {
+        setQuizQuestions(JSON.parse(cached));
+        setQuizAnswers([]);
+        setQuizFeedback([]);
+        setQuizCorrectAnswers([]);
+        setQuizExplanations([]);
+        setQuizStep(0);
+        setQuizScore(0);
+        setQuizActive(true);
+        setLoading(false);
+        return;
+      } else {
+        setMessages(prev => [
+          ...prev,
+          { sender: 'bot', text: 'No cached quiz available for offline mode.' }
+        ]);
+        setLoading(false);
+        return;
+      }
+    }
     const resp = await fetch('http://localhost:8000/quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -436,6 +477,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     ]);
     // Update missed questions if answer is incorrect
     if (!data.correct) updateMissedQuestions(quizQuestions[quizStep].question);
+    const topic = profile.subject;
+    setTopicStats(prev => ({
+      ...prev,
+      [topic]: {
+        correct: (prev[topic]?.correct || 0) + (data.correct ? 1 : 0),
+        total: (prev[topic]?.total || 0) + 1
+      }
+    }));
     setQuizStep(s => s + 1);
     setLoading(false);
     if (quizStep + 1 >= quizQuestions.length) {
@@ -560,6 +609,136 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleSessionSummary = () => setShowSessionSummary(true);
 
+  // Load streak from localStorage on mount
+  useEffect(() => {
+    const streakData = localStorage.getItem('studywithme_streak');
+    if (streakData) {
+      const { streak, lastActiveDate } = JSON.parse(streakData);
+      setStreak(streak);
+      setLastActiveDate(lastActiveDate);
+    }
+  }, []);
+
+  // Update streak on activity (e.g. when a message is sent)
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const today = dayjs().format('YYYY-MM-DD');
+    if (lastActiveDate === today) return;
+    if (lastActiveDate && dayjs(today).diff(dayjs(lastActiveDate), 'day') === 1) {
+      setStreak(s => s + 1);
+      setLastActiveDate(today);
+      localStorage.setItem('studywithme_streak', JSON.stringify({ streak: streak + 1, lastActiveDate: today }));
+    } else if (lastActiveDate !== today) {
+      setStreak(1);
+      setLastActiveDate(today);
+      localStorage.setItem('studywithme_streak', JSON.stringify({ streak: 1, lastActiveDate: today }));
+    }
+    // eslint-disable-next-line
+  }, [messages]);
+
+  const startMiniGame = () => {
+    // Example: 5 random math flashcards
+    const cards = [
+      { question: "6 + 7", answer: "13" },
+      { question: "9 x 2", answer: "18" },
+      { question: "15 - 4", answer: "11" },
+      { question: "8 / 2", answer: "4" },
+      { question: "5 x 5", answer: "25" }
+    ];
+    setMiniGameCards(cards.sort(() => Math.random() - 0.5));
+    setMiniGameStep(0);
+    setMiniGameInput('');
+    setMiniGameScore(0);
+    setMiniGameFeedback(null);
+    setMiniGameActive(true);
+  };
+
+  const submitMiniGame = () => {
+    const correct = miniGameInput.trim() === miniGameCards[miniGameStep].answer;
+    setMiniGameFeedback(correct ? "✅ Correct!" : `❌ Incorrect. Answer: ${miniGameCards[miniGameStep].answer}`);
+    if (correct) setMiniGameScore(s => s + 1);
+    setTimeout(() => {
+      setMiniGameStep(s => s + 1);
+      setMiniGameInput('');
+      setMiniGameFeedback(null);
+    }, 1000);
+  };
+
+  // Prefetch quiz questions on mount
+  useEffect(() => {
+    async function prefetchQuiz() {
+      try {
+        const resp = await fetch('http://localhost:8000/quiz', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profile: {
+              age_group: profile.ageGroup,
+              subject: profile.subject,
+              difficulty_level: profile.difficulty_level
+            }
+          })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          localStorage.setItem('prefetched_quiz', JSON.stringify(data.questions));
+        }
+      } catch (e) {
+        // Ignore errors (offline)
+      }
+    }
+    prefetchQuiz();
+    // eslint-disable-next-line
+  }, [profile.ageGroup, profile.subject, profile.difficulty_level]);
+
+  const exportCSV = () => {
+    let csv = 'Quiz #,Score\n';
+    quizHistory.forEach((q, i) => {
+      csv += `${i + 1},${q.score}/${q.total}\n`;
+    });
+    csv += '\nTopic,Correct,Total\n';
+    Object.entries(topicStats).forEach(([topic, stats]) => {
+      csv += `${topic},${stats.correct},${stats.total}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'studywithme_progress.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text('StudyWithMe Progress Report', 14, 18);
+
+    // Quiz History Table
+    doc.setFontSize(14);
+    doc.text('Quiz History', 14, 30);
+    (doc as any).autoTable({
+      startY: 34,
+      head: [['Quiz #', 'Score']],
+      body: quizHistory.map((q, i) => [`${i + 1}`, `${q.score}/${q.total}`])
+    });
+
+    // Topic Mastery Table
+    const topicStartY = (doc as any).lastAutoTable.finalY + 10;
+    doc.text('Topic Mastery', 14, topicStartY);
+    (doc as any).autoTable({
+      startY: topicStartY + 4,
+      head: [['Topic', 'Correct', 'Total']],
+      body: Object.entries(topicStats).map(([topic, stats]) => [
+        topic,
+        stats.correct,
+        stats.total
+      ])
+    });
+
+    doc.save('studywithme_progress.pdf');
+  };
+
   return (
     <div className="chat-screen" style={{ position: 'relative', minHeight: '100vh' }}>
       <button
@@ -651,6 +830,57 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           <button style={{ background: '#8e24aa', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={startQuiz}>Quiz Mode</button>
           <button style={{ background: '#1976d2', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={() => setShowDashboard(true)}>Progress Dashboard</button>
           <button style={{ background: '#616161', color: '#fff', borderRadius: 8, padding: '8px 18px', fontWeight: 700 }} onClick={() => setShowHistory(true)}>Review Past Sessions</button>
+          <div
+            tabIndex={0}
+            role="button"
+            aria-label="Start Mini-Game"
+            onClick={startMiniGame}
+            onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && startMiniGame()}
+            style={{
+              outline: 'none',
+              border: '2px solid #1976d2',
+              borderRadius: 12,
+              padding: 16,
+              margin: 8,
+              cursor: 'pointer'
+            }}
+          >
+            Mini-Game
+          </div>
+          <button
+            onClick={exportCSV}
+            style={{
+              marginTop: 8,
+              marginRight: 8,
+              padding: '8px 20px',
+              borderRadius: 8,
+              background: '#43a047',
+              color: '#fff',
+              border: 'none',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+            aria-label="Export progress as CSV"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={exportPDF}
+            style={{
+              marginTop: 8,
+              marginRight: 8,
+              padding: '8px 20px',
+              borderRadius: 8,
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+            aria-label="Export progress as PDF"
+          >
+            Export PDF
+          </button>
           {/* Add more as needed */}
         </div>
 
@@ -756,13 +986,29 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
         {/* Chat messages and other content go here */}
         {messages.map((msg, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-            marginBottom: 8
-          }}>
-            {/* Avatar or icon here */}
+          <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+            {msg.sender === 'user' ? (
+              <span
+                style={{
+                  fontSize: '2em',
+                  marginRight: 8,
+                  display: 'inline-block',
+                  width: 36,
+                  height: 36,
+                  textAlign: 'center',
+                  lineHeight: '36px'
+                }}
+                aria-label="User avatar"
+              >
+                {userAvatar}
+              </span>
+            ) : (
+              <img
+                src={personaAvatars[persona] || personaAvatars['friendly']}
+                alt="Tutor avatar"
+                style={{ width: 36, height: 36, borderRadius: '50%', marginRight: 8 }}
+              />
+            )}
             <div style={{
               background: msg.sender === 'user' ? '#e3f2fd' : '#f3e5f5',
               color: '#222',
@@ -815,6 +1061,51 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         ))}
         {loading && (
           <div style={{ color: '#888', margin: '8px 0' }}>AI is typing...</div>
+        )}
+
+        {/* Mini-Game: Flashcard Challenge */}
+        {miniGameActive && (
+          <div style={{
+            background: '#fffde7', borderRadius: 12, padding: 24, margin: '1.5rem 0', textAlign: 'center'
+          }}>
+            <h3>Flashcard Challenge</h3>
+            {miniGameStep < miniGameCards.length ? (
+              <>
+                <div style={{ fontSize: '1.3em', marginBottom: 12 }}>
+                  {miniGameCards[miniGameStep].question}
+                </div>
+                <input
+                  type="text"
+                  value={miniGameInput}
+                  onChange={e => setMiniGameInput(e.target.value)}
+                  aria-label="Mini-game answer"
+                  style={{ fontSize: '1.1em', borderRadius: 8, padding: 8, marginRight: 8 }}
+                  disabled={!!miniGameFeedback}
+                  onKeyDown={e => e.key === 'Enter' && !miniGameFeedback && submitMiniGame()}
+                />
+                <button
+                  onClick={submitMiniGame}
+                  disabled={!miniGameInput.trim() || !!miniGameFeedback}
+                  style={{ background: '#1976d2', color: '#fff', borderRadius: 8, padding: '6px 18px', fontWeight: 700 }}
+                >
+                  Submit
+                </button>
+                {miniGameFeedback && <div style={{ marginTop: 12, fontWeight: 600 }}>{miniGameFeedback}</div>}
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '1.2em', marginBottom: 12 }}>
+                  Game Over! Score: {miniGameScore} / {miniGameCards.length}
+                </div>
+                <button
+                  onClick={() => setMiniGameActive(false)}
+                  style={{ background: '#1976d2', color: '#fff', borderRadius: 8, padding: '6px 18px', fontWeight: 700 }}
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </div>
         )}
       </div>
       {flagModalIdx !== null && (
@@ -1010,16 +1301,21 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         </div>
       )}
       {showDashboard && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.4)', zIndex: 2100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dashboard-title"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)', zIndex: 2000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+        >
           <div style={{
             background: '#fff', borderRadius: 16, padding: 32, minWidth: 340,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.15)', color: '#222', maxWidth: 500
+            boxShadow: '0 4px 24px rgba(0,0,0,0.15)'
           }}>
-            <h2 style={{ marginTop: 0 }}>Progress Dashboard</h2>
+            <h2 id="dashboard-title" style={{ marginTop: 0 }}>Progress Dashboard</h2>
             {/* XP Progress */}
             <div style={{ marginBottom: 18 }}>
               <strong>XP Progress:</strong>
@@ -1144,7 +1440,59 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                 ))}
               </div>
             </div>
+            <div style={{ marginBottom: 18 }}>
+              <strong>Current Streak:</strong>
+              <span style={{ color: '#fbc02d', fontWeight: 700, marginLeft: 8 }}>
+                {streak} day{streak === 1 ? '' : 's'}
+              </span>
+              {streak >= 7 && <span title="7-day streak badge" style={{ marginLeft: 8, fontSize: '1.3em' }}>🔥</span>}
+              {streak >= 14 && <span title="14-day streak badge" style={{ marginLeft: 4, fontSize: '1.3em' }}>🏅</span>}
+              {streak >= 30 && <span title="30-day streak badge" style={{ marginLeft: 4, fontSize: '1.3em' }}>🌟</span>}
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <strong>Topic Mastery:</strong>
+              <div style={{ marginTop: 8 }}>
+                {Object.keys(topicStats).length === 0
+                  ? <div>No data yet.</div>
+                  : Object.entries(topicStats).map(([topic, stats]) => {
+                      const percent = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+                      return (
+                        <div key={topic} style={{ marginBottom: 10 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                            {topic.charAt(0).toUpperCase() + topic.slice(1)}: {percent}%
+                          </div>
+                          <div style={{
+                            background: '#eee',
+                            borderRadius: 8,
+                            height: 16,
+                            width: 220,
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${percent}%`,
+                              background: percent >= 80 ? '#43a047' : percent >= 50 ? '#fbc02d' : '#d32f2f',
+                              height: '100%',
+                              borderRadius: 8,
+                              transition: 'width 0.4s'
+                            }} />
+                            <span style={{
+                              position: 'absolute',
+                              left: 8,
+                              top: 0,
+                              fontSize: '0.95em',
+                              color: '#222'
+                            }}>
+                              {stats.correct}/{stats.total}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+              </div>
+            </div>
             <button
+              ref={closeBtnRef}
               onClick={() => setShowDashboard(false)}
               style={{
                 marginTop: 16,
@@ -1156,6 +1504,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                 fontWeight: 700,
                 cursor: 'pointer'
               }}
+              aria-label="Close dashboard"
             >Close</button>
           </div>
         </div>
