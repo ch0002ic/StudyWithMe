@@ -37,6 +37,7 @@ class ChatRequest(BaseModel):
     session_id: str
     profile: LearnerProfile
     xp: int
+    explain: bool = False  # <-- Add this line
 
 class ChatResponse(BaseModel):
     reply: str
@@ -70,6 +71,13 @@ async def chat_endpoint(req: ChatRequest):
         req.profile.difficulty_level = new_difficulty
 
         system_prompt = get_adaptive_system_prompt(req.profile)
+        if req.explain:
+            system_prompt += (
+                " The user has requested an explanation. "
+                "Please provide a clear, step-by-step explanation for your previous answer, "
+                "using simple language and examples appropriate for the user's age group."
+            )
+
         response = client.chat.completions.create(
             model="gpt-4.1",
             messages=[
