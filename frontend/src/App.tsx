@@ -35,7 +35,7 @@ const App: React.FC = () => {
   const [autoRead, setAutoRead] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string>("🧑");
   const [language, setLanguage] = useState("en");
-  const [currentMode, setCurrentMode] = useState<AppMode>('chat');
+  const [currentMode, setCurrentMode] = useState<AppMode>("chat");
 
   const themeClass = getThemeClass(profile);
   const accessibilityClass = `${highContrast ? "high-contrast" : ""} ${
@@ -70,8 +70,7 @@ const App: React.FC = () => {
           Perfect your knowledge, one review at a time.
         </span>
 
-        
-          {/* <button
+        {/* <button
             aria-label="Toggle high contrast mode"
             onClick={() => setHighContrast((h) => !h)}
             style={{ marginRight: 8 }}
@@ -84,65 +83,53 @@ const App: React.FC = () => {
           >
             {largeText ? "Normal Text" : "Large Text"}
           </button> */}
-          {profile && (
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "center",
-            marginTop: "1rem",
-            gap: "1rem"
-          }}>
+        {profile && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: "1rem",
+              gap: "1rem",
+            }}
+          >
             <button
-              onClick={() => setCurrentMode('chat')}
+              onClick={() => setCurrentMode("chat")}
               style={{
                 padding: "8px 16px",
                 borderRadius: 8,
-                background: currentMode === 'chat' ? "#1976d2" : "#e0e0e0",
-                color: currentMode === 'chat' ? "#fff" : "#333",
+                background: currentMode === "chat" ? "#1976d2" : "#e0e0e0",
+                color: currentMode === "chat" ? "#fff" : "#333",
                 border: "none",
                 fontWeight: 700,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px"
+                gap: "8px",
               }}
-              aria-pressed={currentMode === 'chat'}
+              aria-pressed={currentMode === "chat"}
             >
               💬 Chat Mode
             </button>
             <button
-              onClick={() => setCurrentMode('quiz')}
+              onClick={() => setCurrentMode("quiz")}
               style={{
                 padding: "8px 16px",
                 borderRadius: 8,
-                background: currentMode === 'quiz' ? "#8e24aa" : "#e0e0e0",
-                color: currentMode === 'quiz' ? "#fff" : "#333",
+                background: currentMode === "quiz" ? "#8e24aa" : "#e0e0e0",
+                color: currentMode === "quiz" ? "#fff" : "#333",
                 border: "none",
                 fontWeight: 700,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px"
+                gap: "8px",
               }}
-              aria-pressed={currentMode === 'quiz'}
+              aria-pressed={currentMode === "quiz"}
             >
               📝 Quiz Mode
             </button>
           </div>
         )}
-        
-        <div>
-          {/* Existing dashboard button */}
-          {profile && (
-            <button
-              onClick={() => setShowDashboard(true)}
-              style={{ marginLeft: 8 }}
-              aria-label="View dashboard"
-            >
-              📊 Dashboard
-            </button>
-          )}
-          
-        </div>
       </header>
       <main style={{ minHeight: "60vh" }}>
         {!showOnboarding && !profile && (
@@ -157,7 +144,7 @@ const App: React.FC = () => {
         {profile && (
           <>
             {/* Conditionally render based on mode */}
-            {currentMode === 'chat' ? (
+            {currentMode === "chat" ? (
               <ChatScreen
                 profile={profile}
                 onBack={() => setProfile(null)}

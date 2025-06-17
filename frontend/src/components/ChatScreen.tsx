@@ -7,6 +7,7 @@ import { MdKeyboardVoice } from "react-icons/md";
 
 import { Profile } from "./Onboarding";
 import EducatorDashboard from "./EducatorDashboard";
+import StudentDashboard from "./StudentDashboard";
 
 declare global {
   interface Window {
@@ -1671,337 +1672,342 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           </div>
         )}
         {showDashboard && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="dashboard-title"
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0,0,0,0.4)",
-              zIndex: 2000,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 16,
-                padding: 32,
-                minWidth: 340,
-                boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
-              }}
-            >
-              <h2 id="dashboard-title" style={{ marginTop: 0 }}>
-                Progress Dashboard
-              </h2>
-              {/* XP Progress */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>XP Progress:</strong>
-                <div style={{ marginTop: 6, marginBottom: 8 }}>
-                  <svg width="220" height="22">
-                    <rect
-                      x="0"
-                      y="6"
-                      width="200"
-                      height="10"
-                      rx="5"
-                      fill="#eee"
-                    />
-                    <rect
-                      x="0"
-                      y="6"
-                      width={(xp / LEVEL_UP_XP) * 200}
-                      height="10"
-                      rx="5"
-                      fill="#1976d2"
-                    />
-                  </svg>
-                  <span style={{ marginLeft: 12, fontWeight: 600 }}>
-                    {xp} / {LEVEL_UP_XP} XP
-                  </span>
-                </div>
-                <div>
-                  Level: <b>{level}</b>
-                </div>
-              </div>
-              {/* XP Bar Chart */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>XP per Session:</strong>
-                <svg width={xpHistory.length * 24} height="60">
-                  {xpHistory.map((val, i) => (
-                    <rect
-                      key={i}
-                      x={i * 24}
-                      y={60 - (val / Math.max(...xpHistory, 1)) * 50}
-                      width={18}
-                      height={(val / Math.max(...xpHistory, 1)) * 50}
-                      fill="#1976d2"
-                      rx={4}
-                    />
-                  ))}
-                  {xpHistory.map((val, i) => (
-                    <text
-                      key={i}
-                      x={i * 24 + 9}
-                      y={58}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fill="#333"
-                    >
-                      {val}
-                    </text>
-                  ))}
-                </svg>
-              </div>
-              {/* Accuracy Pie */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>Accuracy:</strong>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <svg width="54" height="54" viewBox="0 0 36 36">
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      fill="#eee"
-                      stroke="#eee"
-                      strokeWidth="4"
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      fill="none"
-                      stroke="#43a047"
-                      strokeWidth="4"
-                      strokeDasharray={`${Math.round(
-                        (correctAnswers / Math.max(1, questionsAsked)) * 100
-                      )},100`}
-                      strokeDashoffset="25"
-                      transform="rotate(-90 18 18)"
-                    />
-                    <text
-                      x="18"
-                      y="22"
-                      textAnchor="middle"
-                      fontSize="12"
-                      fill="#333"
-                      fontWeight="bold"
-                    >
-                      {questionsAsked > 0
-                        ? Math.round((correctAnswers / questionsAsked) * 100)
-                        : 0}
-                      %
-                    </text>
-                  </svg>
-                  <div>
-                    <div>
-                      Correct: <b>{correctAnswers}</b>
-                    </div>
-                    <div>
-                      Incorrect: <b>{incorrectAnswers}</b>
-                    </div>
-                    <div>
-                      Total: <b>{questionsAsked}</b>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Subject */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>Subject:</strong>{" "}
-                {profile.subject.charAt(0).toUpperCase() +
-                  profile.subject.slice(1)}
-              </div>
-              {/* Quiz History Table */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>Quiz History:</strong>
-                <table
-                  style={{ width: "100%", fontSize: "0.97em", marginTop: 4 }}
-                >
-                  <thead>
-                    <tr>
-                      <th>Quiz #</th>
-                      <th>Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quizHistory.map((q, i) => (
-                      <tr key={i}>
-                        <td>{i + 1}</td>
-                        <td>
-                          {q.score} / {q.total}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {/* Most Missed Questions */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>Most Missed Questions:</strong>
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {missedQuestions.length === 0 ? (
-                    <li>None yet!</li>
-                  ) : (
-                    missedQuestions
-                      .sort((a, b) => b.count - a.count)
-                      .slice(0, 5)
-                      .map((q, i) => (
-                        <li key={i}>
-                          <b>{q.count}×</b> {q.question}
-                        </li>
-                      ))
-                  )}
-                </ul>
-              </div>
-              {/* Badges */}
-              <div style={{ marginBottom: 18 }}>
-                <strong>Badges:</strong>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    marginTop: 4,
-                  }}
-                >
-                  {badges.length === 0 ? (
-                    <span>No badges yet.</span>
-                  ) : (
-                    badges.map((badge, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          background: "#fbc02d",
-                          color: "#333",
-                          borderRadius: 12,
-                          padding: "2px 10px",
-                          fontSize: "0.93em",
-                          fontWeight: 600,
-                        }}
-                      >
-                        🏅 {badge}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-              <div style={{ marginBottom: 18 }}>
-                <strong>Current Streak:</strong>
-                <span
-                  style={{ color: "#fbc02d", fontWeight: 700, marginLeft: 8 }}
-                >
-                  {streak} day{streak === 1 ? "" : "s"}
-                </span>
-                {streak >= 7 && (
-                  <span
-                    title="7-day streak badge"
-                    style={{ marginLeft: 8, fontSize: "1.3em" }}
-                  >
-                    🔥
-                  </span>
-                )}
-                {streak >= 14 && (
-                  <span
-                    title="14-day streak badge"
-                    style={{ marginLeft: 4, fontSize: "1.3em" }}
-                  >
-                    🏅
-                  </span>
-                )}
-                {streak >= 30 && (
-                  <span
-                    title="30-day streak badge"
-                    style={{ marginLeft: 4, fontSize: "1.3em" }}
-                  >
-                    🌟
-                  </span>
-                )}
-              </div>
-              <div style={{ marginBottom: 18 }}>
-                <strong>Topic Mastery:</strong>
-                <div style={{ marginTop: 8 }}>
-                  {Object.keys(topicStats).length === 0 ? (
-                    <div>No data yet.</div>
-                  ) : (
-                    Object.entries(topicStats).map(([topic, stats]) => {
-                      const percent =
-                        stats.total > 0
-                          ? Math.round((stats.correct / stats.total) * 100)
-                          : 0;
-                      return (
-                        <div key={topic} style={{ marginBottom: 10 }}>
-                          <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                            {topic.charAt(0).toUpperCase() + topic.slice(1)}:{" "}
-                            {percent}%
-                          </div>
-                          <div
-                            style={{
-                              background: "#eee",
-                              borderRadius: 8,
-                              height: 16,
-                              width: 220,
-                              position: "relative",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: `${percent}%`,
-                                background:
-                                  percent >= 80
-                                    ? "#43a047"
-                                    : percent >= 50
-                                    ? "#fbc02d"
-                                    : "#d32f2f",
-                                height: "100%",
-                                borderRadius: 8,
-                                transition: "width 0.4s",
-                              }}
-                            />
-                            <span
-                              style={{
-                                position: "absolute",
-                                left: 8,
-                                top: 0,
-                                fontSize: "0.95em",
-                                color: "#222",
-                              }}
-                            >
-                              {stats.correct}/{stats.total}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-              <button
-                ref={closeBtnRef}
-                onClick={() => setShowDashboard(false)}
-                style={{
-                  marginTop: 16,
-                  padding: "8px 20px",
-                  borderRadius: 8,
-                  background: "#1976d2",
-                  color: "#fff",
-                  border: "none",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-                aria-label="Close dashboard"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+          <StudentDashboard
+            onClose={() => setShowDashboard(false)}
+            profile={profile}
+          />
+          // <div
+
+          //   role="dialog"
+          //   aria-modal="true"
+          //   aria-labelledby="dashboard-title"
+          //   style={{
+          //     position: "fixed",
+          //     top: 0,
+          //     left: 0,
+          //     right: 0,
+          //     bottom: 0,
+          //     background: "rgba(0,0,0,0.4)",
+          //     zIndex: 2000,
+          //     display: "flex",
+          //     alignItems: "center",
+          //     justifyContent: "center",
+          //   }}
+          // >
+          //   <div
+          //     style={{
+          //       background: "#fff",
+          //       borderRadius: 16,
+          //       padding: 32,
+          //       minWidth: 340,
+          //       boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+          //     }}
+          //   >
+          //     <h2 id="dashboard-title" style={{ marginTop: 0 }}>
+          //       Progress Dashboard
+          //     </h2>
+          //     {/* XP Progress */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>XP Progress:</strong>
+          //       <div style={{ marginTop: 6, marginBottom: 8 }}>
+          //         <svg width="220" height="22">
+          //           <rect
+          //             x="0"
+          //             y="6"
+          //             width="200"
+          //             height="10"
+          //             rx="5"
+          //             fill="#eee"
+          //           />
+          //           <rect
+          //             x="0"
+          //             y="6"
+          //             width={(xp / LEVEL_UP_XP) * 200}
+          //             height="10"
+          //             rx="5"
+          //             fill="#1976d2"
+          //           />
+          //         </svg>
+          //         <span style={{ marginLeft: 12, fontWeight: 600 }}>
+          //           {xp} / {LEVEL_UP_XP} XP
+          //         </span>
+          //       </div>
+          //       <div>
+          //         Level: <b>{level}</b>
+          //       </div>
+          //     </div>
+          //     {/* XP Bar Chart */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>XP per Session:</strong>
+          //       <svg width={xpHistory.length * 24} height="60">
+          //         {xpHistory.map((val, i) => (
+          //           <rect
+          //             key={i}
+          //             x={i * 24}
+          //             y={60 - (val / Math.max(...xpHistory, 1)) * 50}
+          //             width={18}
+          //             height={(val / Math.max(...xpHistory, 1)) * 50}
+          //             fill="#1976d2"
+          //             rx={4}
+          //           />
+          //         ))}
+          //         {xpHistory.map((val, i) => (
+          //           <text
+          //             key={i}
+          //             x={i * 24 + 9}
+          //             y={58}
+          //             textAnchor="middle"
+          //             fontSize="10"
+          //             fill="#333"
+          //           >
+          //             {val}
+          //           </text>
+          //         ))}
+          //       </svg>
+          //     </div>
+          //     {/* Accuracy Pie */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Accuracy:</strong>
+          //       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          //         <svg width="54" height="54" viewBox="0 0 36 36">
+          //           <circle
+          //             cx="18"
+          //             cy="18"
+          //             r="16"
+          //             fill="#eee"
+          //             stroke="#eee"
+          //             strokeWidth="4"
+          //           />
+          //           <circle
+          //             cx="18"
+          //             cy="18"
+          //             r="16"
+          //             fill="none"
+          //             stroke="#43a047"
+          //             strokeWidth="4"
+          //             strokeDasharray={`${Math.round(
+          //               (correctAnswers / Math.max(1, questionsAsked)) * 100
+          //             )},100`}
+          //             strokeDashoffset="25"
+          //             transform="rotate(-90 18 18)"
+          //           />
+          //           <text
+          //             x="18"
+          //             y="22"
+          //             textAnchor="middle"
+          //             fontSize="12"
+          //             fill="#333"
+          //             fontWeight="bold"
+          //           >
+          //             {questionsAsked > 0
+          //               ? Math.round((correctAnswers / questionsAsked) * 100)
+          //               : 0}
+          //             %
+          //           </text>
+          //         </svg>
+          //         <div>
+          //           <div>
+          //             Correct: <b>{correctAnswers}</b>
+          //           </div>
+          //           <div>
+          //             Incorrect: <b>{incorrectAnswers}</b>
+          //           </div>
+          //           <div>
+          //             Total: <b>{questionsAsked}</b>
+          //           </div>
+          //         </div>
+          //       </div>
+          //     </div>
+          //     {/* Subject */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Subject:</strong>{" "}
+          //       {profile.subject.charAt(0).toUpperCase() +
+          //         profile.subject.slice(1)}
+          //     </div>
+          //     {/* Quiz History Table */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Quiz History:</strong>
+          //       <table
+          //         style={{ width: "100%", fontSize: "0.97em", marginTop: 4 }}
+          //       >
+          //         <thead>
+          //           <tr>
+          //             <th>Quiz #</th>
+          //             <th>Score</th>
+          //           </tr>
+          //         </thead>
+          //         <tbody>
+          //           {quizHistory.map((q, i) => (
+          //             <tr key={i}>
+          //               <td>{i + 1}</td>
+          //               <td>
+          //                 {q.score} / {q.total}
+          //               </td>
+          //             </tr>
+          //           ))}
+          //         </tbody>
+          //       </table>
+          //     </div>
+          //     {/* Most Missed Questions */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Most Missed Questions:</strong>
+          //       <ul style={{ margin: 0, paddingLeft: 18 }}>
+          //         {missedQuestions.length === 0 ? (
+          //           <li>None yet!</li>
+          //         ) : (
+          //           missedQuestions
+          //             .sort((a, b) => b.count - a.count)
+          //             .slice(0, 5)
+          //             .map((q, i) => (
+          //               <li key={i}>
+          //                 <b>{q.count}×</b> {q.question}
+          //               </li>
+          //             ))
+          //         )}
+          //       </ul>
+          //     </div>
+          //     {/* Badges */}
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Badges:</strong>
+          //       <div
+          //         style={{
+          //           display: "flex",
+          //           gap: 8,
+          //           flexWrap: "wrap",
+          //           marginTop: 4,
+          //         }}
+          //       >
+          //         {badges.length === 0 ? (
+          //           <span>No badges yet.</span>
+          //         ) : (
+          //           badges.map((badge, i) => (
+          //             <span
+          //               key={i}
+          //               style={{
+          //                 background: "#fbc02d",
+          //                 color: "#333",
+          //                 borderRadius: 12,
+          //                 padding: "2px 10px",
+          //                 fontSize: "0.93em",
+          //                 fontWeight: 600,
+          //               }}
+          //             >
+          //               🏅 {badge}
+          //             </span>
+          //           ))
+          //         )}
+          //       </div>
+          //     </div>
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Current Streak:</strong>
+          //       <span
+          //         style={{ color: "#fbc02d", fontWeight: 700, marginLeft: 8 }}
+          //       >
+          //         {streak} day{streak === 1 ? "" : "s"}
+          //       </span>
+          //       {streak >= 7 && (
+          //         <span
+          //           title="7-day streak badge"
+          //           style={{ marginLeft: 8, fontSize: "1.3em" }}
+          //         >
+          //           🔥
+          //         </span>
+          //       )}
+          //       {streak >= 14 && (
+          //         <span
+          //           title="14-day streak badge"
+          //           style={{ marginLeft: 4, fontSize: "1.3em" }}
+          //         >
+          //           🏅
+          //         </span>
+          //       )}
+          //       {streak >= 30 && (
+          //         <span
+          //           title="30-day streak badge"
+          //           style={{ marginLeft: 4, fontSize: "1.3em" }}
+          //         >
+          //           🌟
+          //         </span>
+          //       )}
+          //     </div>
+          //     <div style={{ marginBottom: 18 }}>
+          //       <strong>Topic Mastery:</strong>
+          //       <div style={{ marginTop: 8 }}>
+          //         {Object.keys(topicStats).length === 0 ? (
+          //           <div>No data yet.</div>
+          //           ) : (
+          //             Object.entries(topicStats).map(([topic, stats]) => {
+          //               const percent =
+          //                 stats.total > 0
+          //                   ? Math.round((stats.correct / stats.total) * 100)
+          //                   : 0;
+          //               return (
+          //                 <div key={topic} style={{ marginBottom: 10 }}>
+          //                   <div style={{ fontWeight: 600, marginBottom: 2 }}>
+          //                     {topic.charAt(0).toUpperCase() + topic.slice(1)}:{" "}
+          //                     {percent}%
+          //                   </div>
+          //                   <div
+          //                     style={{
+          //                       background: "#eee",
+          //                       borderRadius: 8,
+          //                       height: 16,
+          //                       width: 220,
+          //                       position: "relative",
+          //                       overflow: "hidden",
+          //                     }}
+          //                   >
+          //                     <div
+          //                       style={{
+          //                         width: `${percent}%`,
+          //                         background:
+          //                           percent >= 80
+          //                             ? "#43a047"
+          //                             : percent >= 50
+          //                             ? "#fbc02d"
+          //                             : "#d32f2f",
+          //                         height: "100%",
+          //                         borderRadius: 8,
+          //                         transition: "width 0.4s",
+          //                       }}
+          //                     />
+          //                     <span
+          //                       style={{
+          //                         position: "absolute",
+          //                         left: 8,
+          //                         top: 0,
+          //                         fontSize: "0.95em",
+          //                         color: "#222",
+          //                       }}
+          //                     >
+          //                       {stats.correct}/{stats.total}
+          //                     </span>
+          //                   </div>
+          //                 </div>
+          //               );
+          //             })
+          //           )}
+          //         </div>
+          //       </div>
+          //       <button
+          //         ref={closeBtnRef}
+          //         onClick={() => setShowDashboard(false)}
+          //         style={{
+          //           marginTop: 16,
+          //           padding: "8px 20px",
+          //           borderRadius: 8,
+          //           background: "#1976d2",
+          //           color: "#fff",
+          //           border: "none",
+          //           fontWeight: 700,
+          //           cursor: "pointer",
+          //         }}
+          //         aria-label="Close dashboard"
+          //       >
+          //         Close
+          //       </button>
+          //     </div>
+          //   </div>
         )}
         {showHistory && (
           <div
