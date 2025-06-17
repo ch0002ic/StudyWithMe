@@ -3,6 +3,7 @@ import Homepage from './components/Homepage';
 import Onboarding, { Profile } from './components/Onboarding';
 import { ChatScreen } from './components/ChatScreen';
 import Settings from './components/Settings';
+import StudentDashboard from './components/StudentDashboard';
 import './styles/ageThemes.css';
 
 const getThemeClass = (profile: Profile | null) => {
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
   const [largeText, setLargeText] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [persona, setPersona] = useState('friendly');
@@ -62,6 +64,15 @@ const App: React.FC = () => {
           >
             {largeText ? 'Normal Text' : 'Large Text'}
           </button>
+          {profile && (
+            <button
+              onClick={() => setShowDashboard(true)}
+              style={{ marginLeft: 8 }}
+              aria-label="View dashboard"
+            >
+              📊 Dashboard
+            </button>
+          )}
         </div>
       </header>
       <main style={{ minHeight: '60vh' }}>
@@ -118,6 +129,12 @@ const App: React.FC = () => {
           language={language}
           setLanguage={setLanguage}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+      {showDashboard && profile && (
+        <StudentDashboard
+          onClose={() => setShowDashboard(false)}
+          profile={profile}
         />
       )}
       <footer style={{ textAlign: 'center', color: '#888', fontSize: '1rem', margin: '2rem 0 1rem 0' }}>
