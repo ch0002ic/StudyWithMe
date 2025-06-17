@@ -1,0 +1,154 @@
+body, .app-container {
+  font-family: 'Inter', 'Nunito Sans', Arial, sans-serif;
+  background: #f7f9fb;
+  margin: 0;
+  padding: 0;
+}
+.child-theme {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  font-size: 1.3em;
+  color: #333;
+}
+.teen-theme {
+  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+  font-size: 1.1em;
+  color: #222;
+}
+.adult-theme {
+  background: #e3f2fd;
+  font-size: 1em;
+  color: #1565c0;
+}
+.senior-theme {
+  background: #fff;
+  font-size: 1.5em;
+  color: #000;
+  filter: contrast(1.5);
+}
+.high-contrast {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* --- Large Text: Make ALL text larger --- */
+.large-text {
+  font-size: 1.35em !important;
+}
+.large-text .feature-card,
+.large-text .main-card,
+.large-text .homepage,
+.large-text .onboarding {
+  font-size: 1.15em !important;
+}
+
+/* --- High Contrast Consistency --- */
+.high-contrast .homepage,
+.high-contrast .main-card,
+.high-contrast .feature-card,
+.high-contrast .onboarding {
+  background: #111 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+  box-shadow: none !important;
+}
+
+.high-contrast .feature-card *,
+.high-contrast .main-card *,
+.high-contrast .onboarding * {
+  color: #fff !important;
+}
+
+/* --- High Contrast Consistency for Onboarding --- */
+.high-contrast .onboarding {
+  background: #111 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+  box-shadow: none !important;
+}
+.high-contrast .onboarding * {
+  color: #fff !important;
+  background: transparent !important;
+  border-color: #fff !important;
+}
+
+/* High Contrast for ChatScreen */
+.high-contrast .chat-screen,
+.high-contrast .chat-container,
+.high-contrast .chat-bubble,
+.high-contrast .chat-input-area {
+  background: #111 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+  box-shadow: none !important;
+}
+
+.high-contrast .chat-bubble.user {
+  background: #222 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+.high-contrast .chat-bubble.ai {
+  background: #111 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+
+.high-contrast .chat-screen *,
+.high-contrast .chat-container *,
+.high-contrast .chat-input-area * {
+  color: #fff !important;
+  background: transparent !important;
+  border-color: #fff !important;
+}
+
+/* --- Feature Card Sizing and Wrapping --- */
+.feature-card {
+  min-width: 260px;
+  max-width: 340px;
+  white-space: normal;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .feature-card {
+    min-width: 90vw;
+    max-width: 98vw;
+  }
+}
+
+/* --- Large Text + Feature Card --- */
+.large-text .feature-card {
+  min-width: 320px !important;
+  max-width: 420px !important;
+  font-size: 1.25em !important;
+}
+
+@media (max-width: 700px) {
+  .large-text .feature-card {
+    min-width: 90vw !important;
+    max-width: 98vw !important;
+  }
+}
+
+/* --- Grid Responsiveness --- */
+.homepage section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto 2rem auto;
+}
+
+/* --- Large Text + Chat Screen --- */
+.large-text .chat-screen,
+.large-text .chat-container,
+.large-text .chat-bubble,
+.large-text .chat-input-area,
+.large-text .chat-input-area input,
+.large-text .chat-input-area button {
+  font-size: 1.25em !important;
+}
