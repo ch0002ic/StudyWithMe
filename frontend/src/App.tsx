@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Homepage from './components/Homepage';
 import Onboarding, { Profile } from './components/Onboarding';
-import ChatScreen from './components/ChatScreen';
+import { ChatScreen } from './components/ChatScreen';
+import Settings from './components/Settings';
 import './styles/ageThemes.css';
 
 const getThemeClass = (profile: Profile | null) => {
@@ -23,11 +24,22 @@ const getThemeClass = (profile: Profile | null) => {
 const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [highContrast, setHighContrast] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [largeText, setLargeText] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
+  const [persona, setPersona] = useState('friendly');
+  const [autoRead, setAutoRead] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string>('🧑');
+  const [language, setLanguage] = useState('en');
 
   const themeClass = getThemeClass(profile);
   const accessibilityClass = `${highContrast ? 'high-contrast' : ''} ${largeText ? 'large-text' : ''}`;
+
+  // Add classes to <body> for accessibility
+  React.useEffect(() => {
+    document.body.classList.toggle('large-text', largeText);
+    document.body.classList.toggle('high-contrast', highContrast);
+  }, [largeText, highContrast]);
 
   return (
     <div className={`app-container ${themeClass} ${accessibilityClass}`}>
@@ -66,9 +78,48 @@ const App: React.FC = () => {
           <ChatScreen
             profile={profile}
             onBack={() => setProfile(null)}
+            persona={persona}
+            autoRead={autoRead}
+            userAvatar={userAvatar}
+            language={language}
           />
         )}
       </main>
+      <button
+        onClick={() => setShowSettings(true)}
+        style={{
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          zIndex: 100,
+          background: '#fff',
+          border: '2px solid #1976d2',
+          borderRadius: 8,
+          padding: '6px 16px',
+          fontWeight: 700,
+          cursor: 'pointer'
+        }}
+        aria-label="Open settings"
+      >
+        <span role="img" aria-label="Settings" style={{ fontSize: '1.5em' }}>⚙️</span> Settings
+      </button>
+      {showSettings && (
+        <Settings
+          largeText={largeText}
+          setLargeText={setLargeText}
+          highContrast={highContrast}
+          setHighContrast={setHighContrast}
+          persona={persona}
+          setPersona={setPersona}
+          autoRead={autoRead}
+          setAutoRead={setAutoRead}
+          userAvatar={userAvatar}
+          setUserAvatar={setUserAvatar}
+          language={language}
+          setLanguage={setLanguage}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
       <footer style={{ textAlign: 'center', color: '#888', fontSize: '1rem', margin: '2rem 0 1rem 0' }}>
         &copy; {new Date().getFullYear()} StudyWithMe &mdash; Perfect your knowledge, one review at a time.
       </footer>
