@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import openai
 from dotenv import load_dotenv
 import os
 from fastapi.responses import HTMLResponse, FileResponse
@@ -12,7 +13,7 @@ import requests
 
 # Load environment variables
 load_dotenv()
-# client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY")) (applicable only if we have purchased it, so we use Hugging Face for now to cut costs)
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Load prompt config
 PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts.json")
@@ -123,9 +124,14 @@ async def chat_endpoint(req: ChatRequest):
                 "using simple language and examples appropriate for the user's age group."
             )
 
-        # Use Hugging Face GPT-4 mini conversation function instead of undefined client
-        prompt = f"{system_prompt}\nUser: {req.message}"
-        answer = hf_gpt4mini_conversation(prompt)
+        response = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": req.message}
+            ]
+        )
+        answer = response.choices[0].message.content or ""
         xp_earned = calculate_xp(req.message, new_difficulty)
         analytics = {
             "difficulty_level": new_difficulty,
@@ -178,8 +184,10 @@ async def favicon():
 @app.post("/image")
 async def image_endpoint(
     image: UploadFile = File(...),
+    session_id: str = Form(...),
     profile: str = Form(...),
     xp: str = Form(...),
+    persona: Optional[str] = Form(None)
 ):
     try:
         img_bytes = await image.read()
@@ -188,9 +196,21 @@ async def image_endpoint(
         prompt = get_adaptive_system_prompt(LearnerProfile(**profile_obj))
         prompt += " The user uploaded an image of a problem. Please analyze the image and help the user solve the problem step by step."
 
-        # Since 'client' is not defined and Hugging Face API does not support image input in this example,
-        # we handle the image with a custom message.
-        answer = "Sorry, image-based problem solving is not supported in this demo backend."
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Please help me with this problem."},
+                        {"type": "image_url", "image_url": {"url": f"data:{image.content_type};base64,{img_b64}"}}
+                    ]
+                }
+            ],
+            max_tokens=512
+        )
+        answer = response.choices[0].message.content or ""
         return {
             "reply": answer,
             "xp": int(xp) + 10,
@@ -292,7 +312,7 @@ async def quiz_answer(data: dict = Body(...)):
     }
 
 @app.post("/api/chat")
-def chat_prompt_endpoint(request: PromptRequest):
+def hf_chat_endpoint(request: PromptRequest):
     reply = hf_gpt4mini_conversation(request.prompt)
     if reply.startswith("Error:"):
         raise HTTPException(status_code=500, detail=reply)
