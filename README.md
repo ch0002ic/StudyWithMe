@@ -126,6 +126,32 @@ OPENAI_API_KEY=your_api_key_here
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## NOTE on our AI chatbot implementation efforts
+During the 48‑hour hackathon, we invested significant effort into building a true AI‑powered chat interface using both OpenAI’s GPT‑4 API and a Hugging Face GPT‑4 mini endpoint. Our final `main.py` includes:
+
+- A `/chat` endpoint wired to `client.chat.completions.create(...)`
+- Automatic difficulty adjustment, XP calculation, and simple fact‑checking
+- A fallback Hugging Face call (`hf_gpt4mini_conversation`) for offline or experimental scenarios
+- Multipart `/image` handling for image‑based questions
+- Quiz endpoints for quick practice sets
+
+Unfortunately, we encountered persistent API errors under time pressure:
+
+1. **OpenAI rate limits (error code: 429)**
+   Despite correctly loading our `OPENAI_API_KEY` and using the GPT‑4 model, our calls regularly returned HTTP 429 “rate limit exceeded.” We tried exponential back‑off, lower request frequency, and a smaller model, but these mitigations still rarely succeeded in the limited hack window.
+
+2. **Hugging Face error (error code: 404)**
+   Our fallback to the Hugging Face “GPT‑4 mini” space (`yuntian-deng-chatgpt.hf.space`) likewise failed with 404 and intermittent network timeouts. We confirmed the endpoint URL, tested with direct `curl` requests, and even tried alternate Spaces, but were unable to get stable responses before our demo deadline.
+
+As a result, although the frontend chat UI and backend scaffolding were fully in place, the actual **AI completions** could not be demonstrated end‑to‑end during our live demo.
+
+**What we learned:**
+- **Robust error handling:** Real‑world API dependences require resilient retry logic and fallback plans.
+- **Early integration:** Next time, we’ll integrate external APIs, verify end‑to‑end flows immediately, and allow extra buffer for rate‑limit issues.
+- **Local mocking:** Building local mock responses for critical paths ensures demos can run even if upstream services fail.
+
+Despite these setbacks, our architecture—complete with dynamic prompts, analytics, and image support—remains sound. Post‑hackathon, we’ve already begun swapping in a hosted open‑source LLM for improved reliability and will implement a local inference fallback so that StudyWithMe can function seamlessly in future demos and deployments.
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
