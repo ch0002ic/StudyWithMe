@@ -40,7 +40,7 @@ An adaptive AI-powered learning platform that provides personalized, accessible,
 
 - Python 3.11 or higher
 - Node.js and npm
-- OpenAI API key
+- OpenAI API key (purchase is required for API access, so we use Hugging Face for now for demo purposes)
 
 ### Installation
 
@@ -63,7 +63,7 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Create a .env file in the backend directory
+# Create a .env file in the backend directory (purchase is required for API access, so we use Hugging Face for now for demo purposes)
 echo "OPENAI_API_KEY=your_api_key_here" > .env
 ```
 
@@ -100,7 +100,7 @@ npm run dev
 
 - **Backend**
   - FastAPI
-  - OpenAI API
+  - OpenAI API (purchase is required for API access, so we use Hugging Face for now for demo purposes)
   - Python 3.11
   - Uvicorn server
 
@@ -113,9 +113,10 @@ The application is built as a Progressive Web App (PWA), allowing users to:
 
 ## 🔒 Environment Variables
 
-Create a `.env` file in the backend directory with the following:
+Create a `.env` file in the backend directory with the following (purchase is required for API access, so we use Hugging Face for now for demo purposes):
+```env
 OPENAI_API_KEY=your_api_key_here
-
+```
 
 ## 🤝 Contributing
 
