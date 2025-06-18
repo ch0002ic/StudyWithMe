@@ -806,6 +806,24 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   return (
     <>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 0 24px" }}>
+        {/* Educator Dashboard button */}
+        <button
+          style={{
+            marginLeft: 16,
+            background: "#1976d2",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 18px",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+          onClick={() => setShowEducatorDashboard(true)}
+        >
+          Educator Dashboard
+        </button>
+      </div>
       <button
         type="button"
         onClick={onBack}
@@ -1153,16 +1171,20 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                   {userAvatar}
                 </span>
               ) : (
-                <img
-                  src={personaAvatars[persona] || personaAvatars["friendly"]}
-                  alt="Tutor avatar"
+                <span
                   style={{
+                    fontSize: "2em",
+                    marginRight: 8,
+                    display: "inline-block",
                     width: 36,
                     height: 36,
-                    borderRadius: "50%",
-                    marginRight: 8,
+                    textAlign: "center",
+                    lineHeight: "36px",
                   }}
-                />
+                  aria-label="AI Tutor"
+                >
+                  🤖
+                </span>
               )}
               <div
                 style={{
@@ -2341,6 +2363,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           </button>
         )}
       </div>
+      {showEducatorDashboard && (
+        <EducatorDashboard onClose={() => setShowEducatorDashboard(false)} />
+      )}
     </>
   );
 };
