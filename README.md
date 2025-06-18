@@ -150,7 +150,7 @@ As a result, although the frontend chat UI and backend scaffolding were fully in
 - **Early integration:** Next time, we’ll integrate external APIs, verify end‑to‑end flows immediately, and allow extra buffer for rate‑limit issues.
 - **Local mocking:** Building local mock responses for critical paths ensures demos can run even if upstream services fail.
 
-Despite these setbacks, our architecture—complete with dynamic prompts, analytics, and image support—remains sound. Post‑hackathon, we’ve already begun swapping in a hosted open‑source LLM for improved reliability and will implement a local inference fallback so that StudyWithMe can function seamlessly in future demos and deployments.
+Despite these setbacks, our architecture — complete with dynamic prompts, analytics, and image support — remains sound. Post‑hackathon, we’ve already begun swapping in a hosted open‑source LLM for improved reliability and will implement a local inference fallback so that StudyWithMe can function seamlessly in future demos and deployments.
 
 ## 📝 License
 
