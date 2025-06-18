@@ -92,7 +92,7 @@ def hf_gpt4mini_conversation(prompt: str) -> str:
     """
     Sends a prompt to the Hugging Face GPT-4.1 mini Space and returns the response.
     """
-    url = "https://yuntian-deng-chatgpt.hf.space/run/predict"
+    url = "https://yuntian-deng-chatgpt.hf.space/api/predict"
     payload = {
         "data": [prompt]
     }
