@@ -806,11 +806,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 0 24px" }}>
-        {/* Educator Dashboard button */}
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        marginBottom: "24px",
+        marginTop: "16px"
+      }}>
         <button
           style={{
-            marginLeft: 16,
             background: "#1976d2",
             color: "#fff",
             border: "none",
